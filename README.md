@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nitel — Dashboard de revisión de correos
 
-## Getting Started
+Dashboard web para que Nitel **revise, edite y envíe manualmente** los correos de prospección que genera el workflow de n8n, en lugar de mandarlos automáticos.
 
-First, run the development server:
+> 📖 **Para desplegar en un servidor, leer [`DEPLOY-NITEL.md`](./DEPLOY-NITEL.md)** — tiene todo: base de datos, variables de entorno, integración con n8n, Gmail, Docker, reverse proxy y checklist de migración.
+
+---
+
+## Qué hace
+
+- **Bandeja** de leads con sus 3 correos redactados, listos para revisar y enviar.
+- **Buscar leads**: dispara el scraping de Google Maps (vía n8n) desde el propio dashboard.
+- **Editor** de cada correo con preview tipo Gmail, validaciones y confirmación antes de enviar.
+- **Acciones masivas**: enviar un correo a varios leads de una, archivar, etc.
+- **Filtros + buscador** por estado, rubro, origen, nombre/email.
+- **Auto-pausa**: si un lead responde, deja de mandarle los correos siguientes.
+- **Respuestas**: detecta y muestra lo que responden los leads.
+- **Estadísticas**: tasa de respuesta, funnel, por industria, actividad reciente.
+- **Tiempo real**: la bandeja se actualiza sola (Postgres LISTEN/NOTIFY + Server-Sent Events).
+
+## Stack
+
+Next.js 16 · React 19 · TypeScript · TailwindCSS v4 · Drizzle ORM · PostgreSQL · TipTap · Gmail API.
+
+## Correr en desarrollo
 
 ```bash
+npm install
+# crear .env.local (ver DEPLOY-NITEL.md sección 6)
+# correr la migración SQL (ver DEPLOY-NITEL.md sección 5.4)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Queda en http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/(app)/        # Páginas: bandeja, buscar, enviados, respondieron, estadísticas, secuencia
+├── app/api/          # OAuth Gmail + stream SSE
+├── components/       # UI
+├── db/               # Schema (Drizzle) + pool de conexión
+└── lib/              # Gmail, acciones, eventos de DB, fechas
+scripts/              # SQL de migración
+```
 
-## Learn More
+## Variables de entorno
 
-To learn more about Next.js, take a look at the following resources:
+Ver [`DEPLOY-NITEL.md`](./DEPLOY-NITEL.md) sección 6. En resumen:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `DATABASE_URL` — Postgres (el mismo que usa n8n)
+- `N8N_WEBHOOK_BUSCAR_LEADS` — webhook de n8n para buscar leads
+- `GOOGLE_SA_JSON` + `IMPERSONATE_EMAIL` — Gmail con Service Account (producción)
+- `FROM_EMAIL`, `FROM_NAME` — remitente
+- `NEXT_PUBLIC_BASE_URL` — URL pública
+- `TEST_EMAIL_OVERRIDE` — modo prueba (vacío en producción)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ⚠️ Importante
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Nunca** subir `.env.local` ni la carpeta `secrets/` (credenciales). Ya están en `.gitignore`.
+- En producción, `TEST_EMAIL_OVERRIDE` debe quedar **vacío**.
+- El dashboard depende del formato de la columna `correo_N` que llena n8n (primera línea = asunto).
