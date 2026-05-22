@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Send, Inbox, Search, MessageCircleReply, BarChart3 } from "lucide-react";
+import { Send, Inbox, Search, MessageCircleReply, BarChart3, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,6 +10,7 @@ const links = [
   { href: "/buscar", label: "Buscar leads", icon: Search },
   { href: "/respondieron", label: "Respondieron", icon: MessageCircleReply },
   { href: "/enviados", label: "Enviados", icon: Send },
+  { href: "/base-de-datos", label: "Base de datos", icon: Database },
   { href: "/estadisticas", label: "Estadísticas", icon: BarChart3 },
 ];
 

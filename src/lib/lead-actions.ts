@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/db/client";
 
 const { leadsNitel } = schema;
@@ -36,4 +36,46 @@ export async function editarLead(
   revalidatePath(`/secuencia/${placeId}`);
   revalidatePath("/");
   return { ok: true };
+}
+
+function revalidarVistas() {
+  revalidatePath("/base-de-datos");
+  revalidatePath("/");
+  revalidatePath("/enviados");
+  revalidatePath("/respondieron");
+}
+
+/**
+ * Borra un lead de la base de datos de forma PERMANENTE (DELETE físico).
+ * Irreversible: lo saca de la tabla leads_nitel por completo.
+ */
+export async function eliminarLead(
+  placeId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!placeId) return { ok: false, error: "Falta el identificador del lead" };
+  try {
+    await db.delete(leadsNitel).where(eq(leadsNitel.placeId, placeId));
+    revalidarVistas();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "No se pudo borrar el lead" };
+  }
+}
+
+/** Borra varios leads de una (DELETE físico, irreversible). */
+export async function eliminarLeadsBulk(
+  placeIds: string[],
+): Promise<{ ok: boolean; count: number; error?: string }> {
+  if (placeIds.length === 0) return { ok: true, count: 0 };
+  try {
+    await db.delete(leadsNitel).where(inArray(leadsNitel.placeId, placeIds));
+    revalidarVistas();
+    return { ok: true, count: placeIds.length };
+  } catch (e) {
+    return {
+      ok: false,
+      count: 0,
+      error: e instanceof Error ? e.message : "No se pudieron borrar los leads",
+    };
+  }
 }
