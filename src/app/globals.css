@@ -190,6 +190,20 @@
   padding-left: 1.5rem;
   margin: 0.5rem 0;
 }
+/* Tailwind v4 resetea list-style a none; lo restauramos para que se vean
+   las viñetas y los números dentro del editor. */
+.tiptap-dark ul {
+  list-style: disc;
+}
+.tiptap-dark ol {
+  list-style: decimal;
+}
+.tiptap-dark li {
+  margin: 0.15rem 0;
+}
+.tiptap-dark li p {
+  margin: 0;
+}
 .tiptap-dark blockquote {
   border-left: 3px solid #770eff;
   padding-left: 1rem;

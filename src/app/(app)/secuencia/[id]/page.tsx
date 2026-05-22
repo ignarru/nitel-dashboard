@@ -23,18 +23,21 @@ export default async function SecuenciaPage({ params }: { params: Promise<{ id: 
   if (!lead) notFound();
 
   const correoData = [
-    { orden: 1 as const, raw: lead.correo1, enviado: !!lead.contactado1, sentAt: lead.horaEnviado1 },
-    { orden: 2 as const, raw: lead.correo2, enviado: !!lead.contactado2, sentAt: lead.horaEnviado2 },
-    { orden: 3 as const, raw: lead.correo3, enviado: !!lead.contactado3, sentAt: lead.horaEnviado3 },
+    { orden: 1 as const, raw: lead.correo1, html: lead.correo1Html, enviado: !!lead.contactado1, sentAt: lead.horaEnviado1 },
+    { orden: 2 as const, raw: lead.correo2, html: lead.correo2Html, enviado: !!lead.contactado2, sentAt: lead.horaEnviado2 },
+    { orden: 3 as const, raw: lead.correo3, html: lead.correo3Html, enviado: !!lead.contactado3, sentAt: lead.horaEnviado3 },
   ];
   const correos = correoData
     .map((c) => {
       const parsed = parseCorreoColumna(c.raw);
       if (!parsed) return null;
+      // Si el operador ya editó (correo_N_html), arrancamos del HTML con formato.
+      // Si no, derivamos HTML simple del texto plano que dejó n8n.
+      const tieneHtml = c.html && c.html.replace(/<[^>]*>/g, "").trim() !== "";
       return {
         orden: c.orden,
         asunto: parsed.asunto,
-        cuerpoHtml: cuerpoTextoAHtml(parsed.cuerpo),
+        cuerpoHtml: tieneHtml ? c.html! : cuerpoTextoAHtml(parsed.cuerpo),
         enviado: c.enviado,
         sentAt: c.sentAt?.toISOString() ?? null,
       };

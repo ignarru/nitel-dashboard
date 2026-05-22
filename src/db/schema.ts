@@ -37,6 +37,13 @@ export const leadsNitel = pgTable(
     correo1: varchar("correo_1", { length: 255 }),
     correo2: varchar("correo_2", { length: 255 }),
     correo3: varchar("correo_3", { length: 255 }),
+    // HTML editado por el humano en el dashboard. n8n solo escribe correo_N (texto
+    // plano); cuando el operador edita en el editor, guardamos acá el HTML con formato
+    // (negritas, links, listas) para enviarlo fiel. NULL = nunca se editó → se regenera
+    // el HTML desde el texto plano de correo_N.
+    correo1Html: text("correo_1_html"),
+    correo2Html: text("correo_2_html"),
+    correo3Html: text("correo_3_html"),
     rating: numeric("rating", { precision: 2, scale: 1 }),
     reviews: integer("reviews"),
     lat: numeric("lat", { precision: 10, scale: 7 }),

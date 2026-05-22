@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import LinkExt from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
@@ -18,6 +18,13 @@ import {
   Pencil,
   Check,
   StickyNote,
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  Link2,
+  ChevronDown,
 } from "lucide-react";
 import { guardarBorrador, enviarAhora } from "@/lib/correo-actions";
 import { guardarNota, editarLead } from "@/lib/lead-actions";
@@ -47,6 +54,7 @@ type CorreoUI = {
 
 export function SecuenciaEditor({ lead, correos }: { lead: LeadUI; correos: CorreoUI[] }) {
   const [activeOrden, setActiveOrden] = useState<Orden>(correos[0]?.orden ?? 1);
+  const [datosAbiertos, setDatosAbiertos] = useState(false);
   const active = correos.find((c) => c.orden === activeOrden) ?? correos[0];
 
   if (!active) {
@@ -58,8 +66,9 @@ export function SecuenciaEditor({ lead, correos }: { lead: LeadUI; correos: Corr
   }
 
   return (
-    <div className="h-full flex bg-[#0a0a0f]">
-      <aside className="w-72 shrink-0 border-r border-[var(--nitel-border)] bg-[#0a0a0f]/80 backdrop-blur-xl flex flex-col">
+    <div className="h-full flex flex-col md:flex-row bg-[#0a0a0f]">
+      {/* Sidebar — solo desktop/tablet */}
+      <aside className="hidden md:flex w-72 shrink-0 border-r border-[var(--nitel-border)] bg-[#0a0a0f]/80 backdrop-blur-xl flex-col">
         <LeadInfoEditable lead={lead} />
         <div className="p-3 flex-1 overflow-y-auto">
           <div className="text-[10.5px] uppercase tracking-[0.16em] text-zinc-500 mb-3 px-2 font-medium">
@@ -106,6 +115,57 @@ export function SecuenciaEditor({ lead, correos }: { lead: LeadUI; correos: Corr
         </div>
       </aside>
 
+      {/* Barra mobile: datos del lead plegables + tabs de correos */}
+      <div className="md:hidden border-b border-[var(--nitel-border)] bg-[#0a0a0f]/90 backdrop-blur-xl shrink-0">
+        <button
+          type="button"
+          onClick={() => setDatosAbiertos((v) => !v)}
+          aria-expanded={datosAbiertos}
+          className="w-full flex items-center gap-2 px-4 py-2.5 text-left"
+        >
+          <span className="text-[10.5px] uppercase tracking-[0.16em] text-[#01dcfd]/80 font-medium shrink-0">
+            Lead
+          </span>
+          <span className="text-sm text-zinc-200 truncate flex-1">
+            {lead.name || lead.email || "(sin nombre)"}
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${
+              datosAbiertos ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {datosAbiertos && (
+          <div className="border-t border-[var(--nitel-border)] max-h-[50vh] overflow-y-auto">
+            <LeadInfoEditable lead={lead} />
+          </div>
+        )}
+        <div className="flex gap-1.5 px-3 pb-2.5 pt-1 overflow-x-auto">
+          {correos.map((c) => {
+            const isActive = c.orden === activeOrden;
+            const Icon = c.enviado ? CheckCheck : Circle;
+            return (
+              <button
+                key={c.orden}
+                onClick={() => setActiveOrden(c.orden)}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors ${
+                  isActive
+                    ? "nitel-gradient-soft text-zinc-50 border border-[#770eff]/40"
+                    : "text-zinc-400 border border-[var(--nitel-border)] hover:text-zinc-100"
+                }`}
+              >
+                <Icon
+                  className={`w-3.5 h-3.5 ${
+                    c.enviado || isActive ? "text-[#01dcfd]" : "text-zinc-500"
+                  }`}
+                />
+                Correo {c.orden}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <CorreoPanel key={`${lead.placeId}-${active.orden}`} lead={lead} correo={active} />
     </div>
   );
@@ -119,6 +179,8 @@ function CorreoPanel({ lead, correo }: { lead: LeadUI; correo: CorreoUI }) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [pending, start] = useTransition();
   const [confirmando, setConfirmando] = useState(false);
+  // En pantallas chicas mostramos editor o preview (no ambos a la vez).
+  const [vista, setVista] = useState<"editor" | "preview">("editor");
 
   // Validaciones para habilitar el envío
   const cuerpoVacio = html.replace(/<[^>]*>/g, "").trim() === "";
@@ -227,18 +289,41 @@ function CorreoPanel({ lead, correo }: { lead: LeadUI; correo: CorreoUI }) {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 grid grid-cols-2 divide-x divide-[var(--nitel-border)]">
-        <div className="flex flex-col bg-[#0a0a0f]">
+      {/* Conmutador editor/preview — solo en pantallas chicas (en lg se ven ambos) */}
+      <div className="lg:hidden flex items-center gap-1 px-4 py-2 border-b border-[var(--nitel-border)] bg-[#0a0a0f]">
+        <button
+          type="button"
+          onClick={() => setVista("editor")}
+          className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${
+            vista === "editor" ? "bg-[#770eff]/20 text-[#01dcfd]" : "text-zinc-400 hover:text-zinc-100"
+          }`}
+        >
+          Editor
+        </button>
+        <button
+          type="button"
+          onClick={() => setVista("preview")}
+          className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${
+            vista === "preview" ? "bg-[#770eff]/20 text-[#01dcfd]" : "text-zinc-400 hover:text-zinc-100"
+          }`}
+        >
+          Vista previa
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 lg:divide-x divide-[var(--nitel-border)]">
+        <div className={`${vista === "editor" ? "flex" : "hidden"} lg:flex flex-col bg-[#0a0a0f] min-h-0`}>
           <div className="px-4 py-2.5 border-b border-[var(--nitel-border)] text-[10.5px] uppercase tracking-[0.16em] text-zinc-500 font-medium flex items-center gap-2">
             <span className="w-1 h-1 rounded-full bg-[#770eff]" />
             Editor
           </div>
+          {editable && <EditorToolbar editor={editor} />}
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <EditorContent editor={editor} />
           </div>
         </div>
 
-        <div className="flex flex-col bg-[#08080d]">
+        <div className={`${vista === "preview" ? "flex" : "hidden"} lg:flex flex-col bg-[#08080d] min-h-0`}>
           <div className="px-4 py-2.5 border-b border-[var(--nitel-border)] text-[10.5px] uppercase tracking-[0.16em] text-zinc-500 font-medium flex items-center gap-2">
             <span className="w-1 h-1 rounded-full bg-[#01dcfd]" />
             Cómo lo va a ver el lead
@@ -271,7 +356,7 @@ function CorreoPanel({ lead, correo }: { lead: LeadUI; correo: CorreoUI }) {
                   </div>
                 </div>
                 <div
-                  className="px-6 py-5 text-[14px] leading-relaxed text-zinc-800 prose prose-sm max-w-none [&_p]:my-2"
+                  className="px-6 py-5 text-[14px] leading-relaxed text-zinc-800 max-w-none [&_p]:my-2 [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-6 [&_ol]:pl-6 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_a]:text-blue-600 [&_a]:underline [&_strong]:font-semibold"
                   dangerouslySetInnerHTML={{ __html: html }}
                 />
               </div>
@@ -280,7 +365,7 @@ function CorreoPanel({ lead, correo }: { lead: LeadUI; correo: CorreoUI }) {
         </div>
       </div>
 
-      <div className="px-6 py-4 border-t border-[var(--nitel-border)] bg-[#14141f]/60 backdrop-blur flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-[var(--nitel-border)] bg-[#14141f]/60 backdrop-blur flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 shrink-0">
         {correo.enviado ? (
           <div className="text-sm text-zinc-400 flex items-center gap-2">
             <CheckCheck className="w-4 h-4 text-[#01dcfd]" />
@@ -313,7 +398,7 @@ function CorreoPanel({ lead, correo }: { lead: LeadUI; correo: CorreoUI }) {
             <button
               onClick={() => setConfirmando(true)}
               disabled={pending || !puedeEnviar}
-              className="relative px-5 py-2 rounded-lg nitel-gradient text-white text-sm font-medium tracking-tight transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:shadow-[0_8px_24px_-8px_rgba(1,220,253,0.6)] enabled:hover:-translate-y-px active:translate-y-0"
+              className="relative w-full sm:w-auto justify-center px-5 py-2.5 sm:py-2 rounded-lg nitel-gradient text-white text-sm font-medium tracking-tight transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:shadow-[0_8px_24px_-8px_rgba(1,220,253,0.6)] enabled:hover:-translate-y-px active:translate-y-0"
             >
               {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Enviar ahora
@@ -426,6 +511,112 @@ function ConfirmarEnvioModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ToolbarButton({
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  active?: boolean;
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+        active
+          ? "bg-[#770eff]/20 text-[#01dcfd]"
+          : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Barra de formato del editor: negrita, cursiva, subrayado, listas y link. */
+function EditorToolbar({ editor }: { editor: Editor | null }) {
+  const state = useEditorState({
+    editor,
+    selector: ({ editor }) =>
+      editor
+        ? {
+            bold: editor.isActive("bold"),
+            italic: editor.isActive("italic"),
+            underline: editor.isActive("underline"),
+            bullet: editor.isActive("bulletList"),
+            ordered: editor.isActive("orderedList"),
+            link: editor.isActive("link"),
+          }
+        : null,
+  });
+
+  if (!editor) return null;
+
+  function toggleLink() {
+    if (!editor) return;
+    if (editor.isActive("link")) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    const url = window.prompt("URL del link (incluí https://):");
+    if (url && url.trim()) {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-0.5 px-4 py-2 border-b border-[var(--nitel-border)]">
+      <ToolbarButton
+        label="Negrita"
+        active={state?.bold}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+      >
+        <Bold className="w-4 h-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        label="Cursiva"
+        active={state?.italic}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+      >
+        <Italic className="w-4 h-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        label="Subrayado"
+        active={state?.underline}
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+      >
+        <UnderlineIcon className="w-4 h-4" />
+      </ToolbarButton>
+      <span className="w-px h-5 bg-[var(--nitel-border)] mx-1" />
+      <ToolbarButton
+        label="Lista con viñetas"
+        active={state?.bullet}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+      >
+        <List className="w-4 h-4" />
+      </ToolbarButton>
+      <ToolbarButton
+        label="Lista numerada"
+        active={state?.ordered}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+      >
+        <ListOrdered className="w-4 h-4" />
+      </ToolbarButton>
+      <span className="w-px h-5 bg-[var(--nitel-border)] mx-1" />
+      <ToolbarButton label="Insertar link" active={state?.link} onClick={toggleLink}>
+        <Link2 className="w-4 h-4" />
+      </ToolbarButton>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, or, isNull } from "drizzle-orm";
 import { db, schema } from "@/db/client";
-import { combinarCorreo, htmlACuerpoTexto } from "@/db/schema";
+import { combinarCorreo, htmlACuerpoTexto, cuerpoTextoAHtml } from "@/db/schema";
 import { sendEmail, isAuthorized } from "@/lib/gmail";
 
 const { leadsNitel } = schema;
@@ -11,11 +11,12 @@ const { leadsNitel } = schema;
 type Orden = 1 | 2 | 3;
 type SetLead = Partial<typeof leadsNitel.$inferInsert>;
 
-function setCorreo(orden: Orden, value: string): SetLead {
+/** Guarda el texto plano (compat n8n) y el HTML con formato del editor. */
+function setCorreo(orden: Orden, texto: string, html: string): SetLead {
   switch (orden) {
-    case 1: return { correo1: value };
-    case 2: return { correo2: value };
-    case 3: return { correo3: value };
+    case 1: return { correo1: texto, correo1Html: html };
+    case 2: return { correo2: texto, correo2Html: html };
+    case 3: return { correo3: texto, correo3Html: html };
   }
 }
 
@@ -27,11 +28,35 @@ function setEnviado(orden: Orden, hora: Date): SetLead {
   }
 }
 
+/** Revierte el claim de envío (cuando el sendEmail falla después de marcar). */
+function setNoEnviado(orden: Orden): SetLead {
+  switch (orden) {
+    case 1: return { contactado1: false, horaEnviado1: null };
+    case 2: return { contactado2: false, horaEnviado2: null };
+    case 3: return { contactado3: false, horaEnviado3: null };
+  }
+}
+
+/** Condición SQL "este correo todavía NO fue enviado" (cubre false y NULL). */
+function noContactadoCond(orden: Orden) {
+  const col =
+    orden === 1 ? leadsNitel.contactado1 : orden === 2 ? leadsNitel.contactado2 : leadsNitel.contactado3;
+  return or(eq(col, false), isNull(col));
+}
+
 function getCorreoRaw(lead: typeof leadsNitel.$inferSelect, orden: Orden): string | null {
   switch (orden) {
     case 1: return lead.correo1;
     case 2: return lead.correo2;
     case 3: return lead.correo3;
+  }
+}
+
+function getCorreoHtml(lead: typeof leadsNitel.$inferSelect, orden: Orden): string | null {
+  switch (orden) {
+    case 1: return lead.correo1Html;
+    case 2: return lead.correo2Html;
+    case 3: return lead.correo3Html;
   }
 }
 
@@ -55,9 +80,11 @@ export async function guardarBorrador(
 ) {
   const cuerpoTexto = htmlACuerpoTexto(cuerpoHtml);
   const combinado = combinarCorreo(asunto, cuerpoTexto);
+  // Guardamos el texto plano (correo_N, compat n8n + asunto) y el HTML con formato
+  // (correo_N_html) para enviar el correo fiel a lo que el operador editó.
   await db
     .update(leadsNitel)
-    .set(setCorreo(orden, combinado))
+    .set(setCorreo(orden, combinado, cuerpoHtml))
     .where(eq(leadsNitel.placeId, placeId));
   revalidatePath(`/secuencia/${placeId}`);
 }
@@ -117,27 +144,46 @@ export async function enviarAhora(
     return { ok: false, error: "El cuerpo del correo está vacío. Completalo antes de enviar." };
   }
 
-  const cuerpoHtml = cuerpoTexto
-    .split(/\n{2,}/)
-    .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
-    .join("\n");
+  // Cuerpo HTML a enviar: si el operador editó en el dashboard, usamos el HTML con
+  // formato guardado (negritas, links, listas). Si nunca se editó (correo recién
+  // traído por n8n en texto plano), regeneramos HTML simple desde el texto.
+  const htmlGuardado = getCorreoHtml(lead, orden);
+  const cuerpoHtml =
+    htmlGuardado && htmlGuardado.replace(/<[^>]*>/g, "").trim() !== ""
+      ? htmlGuardado
+      : cuerpoTextoAHtml(cuerpoTexto);
 
   // Modo prueba: TEST_EMAIL_OVERRIDE redirige a una casilla controlada.
   // La DB se actualiza igual con el lead original.
   const destinatarioReal = process.env.TEST_EMAIL_OVERRIDE?.trim() || lead.email;
 
+  // Claim atómico anti doble-envío: marcamos contactado_N = true en un UPDATE
+  // condicional ANTES de mandar. Si dos requests corren a la vez (doble click,
+  // bulk + manual), solo uno matchea la condición "todavía no enviado" y obtiene
+  // la fila; el otro recibe 0 filas y aborta. Si el envío falla después, revertimos.
+  const claimed = await db
+    .update(leadsNitel)
+    .set(setEnviado(orden, new Date()))
+    .where(and(eq(leadsNitel.placeId, placeId), noContactadoCond(orden)))
+    .returning({ placeId: leadsNitel.placeId });
+
+  if (claimed.length === 0) {
+    return { ok: false, error: "Este correo ya fue enviado (o se está enviando ahora mismo)." };
+  }
+
   try {
     await sendEmail({ to: destinatarioReal, subject: asunto, html: cuerpoHtml });
-    await db
-      .update(leadsNitel)
-      .set(setEnviado(orden, new Date()))
-      .where(eq(leadsNitel.placeId, placeId));
 
     revalidatePath(`/secuencia/${placeId}`);
     revalidatePath("/");
     revalidatePath("/enviados");
     return { ok: true };
   } catch (e) {
+    // El envío falló: liberamos el claim para que se pueda reintentar.
+    await db
+      .update(leadsNitel)
+      .set(setNoEnviado(orden))
+      .where(eq(leadsNitel.placeId, placeId));
     const msg = e instanceof Error ? e.message : "Error desconocido";
     return { ok: false, error: msg };
   }
