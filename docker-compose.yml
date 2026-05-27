@@ -1,0 +1,13 @@
+services:
+  dashboard:
+    build: .
+    container_name: nitel-dashboard
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env.local
+    volumes:
+      - ./secrets:/app/secrets:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
