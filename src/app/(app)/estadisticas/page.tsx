@@ -47,7 +47,7 @@ async function getResumen(): Promise<Resumen> {
         contactado_1, contactado_2, contactado_3,
         respondio, cual_respondio, respuesta_texto,
         respuesta_recibida_at, hora_enviado_1, hora_enviado_2, hora_enviado_3
-      FROM leads_nitel
+      FROM nitel_leads
     ),
     tiempos AS (
       SELECT
@@ -62,7 +62,7 @@ async function getResumen(): Promise<Resumen> {
       WHERE respondio = true AND nullif(trim(respuesta_texto), '') IS NOT NULL AND respuesta_recibida_at IS NOT NULL
     )
     SELECT
-      (SELECT COUNT(*)::int FROM leads_nitel) AS total_leads,
+      (SELECT COUNT(*)::int FROM nitel_leads) AS total_leads,
       (SELECT COUNT(*)::int FROM base WHERE tiene_contenido > 0) AS con_contenido,
       (SELECT COUNT(*)::int FROM base WHERE fue_contactado > 0) AS contactados,
       (SELECT COUNT(*)::int FROM base WHERE respondio = true AND nullif(trim(respuesta_texto), '') IS NOT NULL) AS respondieron,
@@ -103,7 +103,7 @@ async function getTopPorCategoria(): Promise<TopRow[]> {
       COALESCE(NULLIF(trim(category), ''), '(sin categoría)') AS etiqueta,
       COUNT(*) FILTER (WHERE contactado_1 OR contactado_2 OR contactado_3)::int AS contactados,
       COUNT(*) FILTER (WHERE respondio = true AND nullif(trim(respuesta_texto), '') IS NOT NULL)::int AS respondieron
-    FROM leads_nitel
+    FROM nitel_leads
     GROUP BY etiqueta
     HAVING COUNT(*) FILTER (WHERE contactado_1 OR contactado_2 OR contactado_3) > 0
     ORDER BY (CASE WHEN COUNT(*) FILTER (WHERE contactado_1 OR contactado_2 OR contactado_3) = 0 THEN 0
@@ -128,7 +128,7 @@ async function getTopPorSourceNode(): Promise<TopRow[]> {
       COALESCE(NULLIF(trim(source_node), ''), '(sin origen)') AS etiqueta,
       COUNT(*) FILTER (WHERE contactado_1 OR contactado_2 OR contactado_3)::int AS contactados,
       COUNT(*) FILTER (WHERE respondio = true AND nullif(trim(respuesta_texto), '') IS NOT NULL)::int AS respondieron
-    FROM leads_nitel
+    FROM nitel_leads
     GROUP BY etiqueta
     HAVING COUNT(*) FILTER (WHERE contactado_1 OR contactado_2 OR contactado_3) > 0
     ORDER BY respondieron DESC, contactados DESC
@@ -156,18 +156,18 @@ async function getActividad(): Promise<ActividadDia[]> {
     ),
     enviados AS (
       SELECT dia, COUNT(*)::int AS n FROM (
-        SELECT (hora_enviado_1 AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS dia FROM leads_nitel WHERE hora_enviado_1 IS NOT NULL
+        SELECT (hora_enviado_1 AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS dia FROM nitel_leads WHERE hora_enviado_1 IS NOT NULL
         UNION ALL
-        SELECT (hora_enviado_2 AT TIME ZONE 'America/Argentina/Buenos_Aires')::date FROM leads_nitel WHERE hora_enviado_2 IS NOT NULL
+        SELECT (hora_enviado_2 AT TIME ZONE 'America/Argentina/Buenos_Aires')::date FROM nitel_leads WHERE hora_enviado_2 IS NOT NULL
         UNION ALL
-        SELECT (hora_enviado_3 AT TIME ZONE 'America/Argentina/Buenos_Aires')::date FROM leads_nitel WHERE hora_enviado_3 IS NOT NULL
+        SELECT (hora_enviado_3 AT TIME ZONE 'America/Argentina/Buenos_Aires')::date FROM nitel_leads WHERE hora_enviado_3 IS NOT NULL
       ) e
       GROUP BY dia
     ),
     respuestas AS (
       SELECT (respuesta_recibida_at AT TIME ZONE 'America/Argentina/Buenos_Aires')::date AS dia,
              COUNT(*)::int AS n
-      FROM leads_nitel
+      FROM nitel_leads
       WHERE respondio = true AND nullif(trim(respuesta_texto), '') IS NOT NULL AND respuesta_recibida_at IS NOT NULL
       GROUP BY dia
     )

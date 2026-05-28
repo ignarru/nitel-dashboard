@@ -1,6 +1,6 @@
 /**
  * Endpoint Server-Sent Events. Multiplexea dos tipos de cambios:
- *   - event "lead:change"    → cambio en leads_nitel
+ *   - event "lead:change"    → cambio en nitel_leads
  *   - event "busqueda:change" → cambio en busquedas_logs
  */
 import {

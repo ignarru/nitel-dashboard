@@ -21,19 +21,19 @@ export default async function EnviadosPage() {
       SELECT place_id, name, email, 1 AS orden,
         split_part(correo_1, E'\n', 1) AS asunto,
         hora_enviado_1 AS hora_enviado
-      FROM leads_nitel
+      FROM nitel_leads
       WHERE contactado_1 AND hora_enviado_1 IS NOT NULL
       UNION ALL
       SELECT place_id, name, email, 2,
         split_part(correo_2, E'\n', 1),
         hora_enviado_2
-      FROM leads_nitel
+      FROM nitel_leads
       WHERE contactado_2 AND hora_enviado_2 IS NOT NULL
       UNION ALL
       SELECT place_id, name, email, 3,
         split_part(correo_3, E'\n', 1),
         hora_enviado_3
-      FROM leads_nitel
+      FROM nitel_leads
       WHERE contactado_3 AND hora_enviado_3 IS NOT NULL
       ORDER BY hora_enviado DESC
       LIMIT 200

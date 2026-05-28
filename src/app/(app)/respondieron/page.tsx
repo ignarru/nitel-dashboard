@@ -25,7 +25,7 @@ async function getRespuestas(): Promise<RespuestaRow[]> {
       place_id, name, email, category,
       cual_respondio, respuesta_texto, respuesta_recibida_at,
       hora_enviado_1, hora_enviado_2, hora_enviado_3
-    FROM leads_nitel
+    FROM nitel_leads
     WHERE respondio = true
       AND nullif(trim(respuesta_texto), '') IS NOT NULL
     ORDER BY respuesta_recibida_at DESC NULLS LAST, name ASC

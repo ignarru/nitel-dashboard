@@ -47,7 +47,7 @@ function revalidarVistas() {
 
 /**
  * Borra un lead de la base de datos de forma PERMANENTE (DELETE físico).
- * Irreversible: lo saca de la tabla leads_nitel por completo.
+ * Irreversible: lo saca de la tabla nitel_leads por completo.
  */
 export async function eliminarLead(
   placeId: string,

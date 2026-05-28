@@ -73,14 +73,14 @@ async function getLeads(f: Filtros): Promise<{ rows: LeadDbRow[]; total: number 
       (nullif(trim(correo_1), '') IS NOT NULL
        OR nullif(trim(correo_2), '') IS NOT NULL
        OR nullif(trim(correo_3), '') IS NOT NULL) AS tiene_correos
-    FROM leads_nitel
+    FROM nitel_leads
     WHERE ${cond}
     ORDER BY ${orderBy}
     LIMIT ${PAGE_SIZE} OFFSET ${offset}
   `);
 
   const totalR = await db.execute(sql`
-    SELECT COUNT(*)::int AS total FROM leads_nitel WHERE ${cond}
+    SELECT COUNT(*)::int AS total FROM nitel_leads WHERE ${cond}
   `);
   const total = (totalR.rows[0] as { total: number }).total;
 
@@ -88,7 +88,7 @@ async function getLeads(f: Filtros): Promise<{ rows: LeadDbRow[]; total: number 
 }
 
 async function getOpcionesFiltro(): Promise<{ rubros: string[]; origenes: string[] }> {
-  const r = await db.execute(sql`SELECT DISTINCT category, source_node FROM leads_nitel`);
+  const r = await db.execute(sql`SELECT DISTINCT category, source_node FROM nitel_leads`);
   const rows = r.rows as Array<{ category: string | null; source_node: string | null }>;
   const rubros = [...new Set(rows.map((x) => x.category).filter((x): x is string => !!x?.trim()))].sort();
   const origenes = [...new Set(rows.map((x) => x.source_node).filter((x): x is string => !!x?.trim()))].sort();
@@ -103,7 +103,7 @@ async function getStats(): Promise<Stats> {
       COUNT(*) FILTER (WHERE COALESCE(contactado_1,false) OR COALESCE(contactado_2,false) OR COALESCE(contactado_3,false))::int AS contactados,
       COUNT(*) FILTER (WHERE respondio = true)::int AS respondieron,
       COUNT(*) FILTER (WHERE archivado = true)::int AS archivados
-    FROM leads_nitel
+    FROM nitel_leads
   `);
   const row = r.rows[0] as Record<string, number>;
   return {

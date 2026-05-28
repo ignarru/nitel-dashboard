@@ -74,14 +74,14 @@ async function getLeads(f: Filtros): Promise<{ rows: LeadRow[]; total: number }>
       split_part(correo_1, E'\n', 1) AS asunto_1,
       split_part(correo_2, E'\n', 1) AS asunto_2,
       split_part(correo_3, E'\n', 1) AS asunto_3
-    FROM leads_nitel
+    FROM nitel_leads
     WHERE ${base} AND ${filtro}
     ORDER BY name ASC
     LIMIT ${PAGE_SIZE} OFFSET ${offset}
   `);
 
   const totalR = await db.execute(sql`
-    SELECT COUNT(*)::int AS total FROM leads_nitel WHERE ${base} AND ${filtro}
+    SELECT COUNT(*)::int AS total FROM nitel_leads WHERE ${base} AND ${filtro}
   `);
   const total = (totalR.rows[0] as { total: number }).total;
 
@@ -92,7 +92,7 @@ async function getLeads(f: Filtros): Promise<{ rows: LeadRow[]; total: number }>
 async function getOpcionesFiltro(): Promise<{ rubros: string[]; origenes: string[] }> {
   const base = condicionesBase();
   const r = await db.execute(sql`
-    SELECT DISTINCT category, source_node FROM leads_nitel WHERE ${base}
+    SELECT DISTINCT category, source_node FROM nitel_leads WHERE ${base}
   `);
   const rows = r.rows as Array<{ category: string | null; source_node: string | null }>;
   const rubros = [...new Set(rows.map((x) => x.category).filter((x): x is string => !!x?.trim()))].sort();
@@ -110,21 +110,21 @@ async function getStats(): Promise<Stats> {
         (CASE WHEN contactado_1 THEN 1 ELSE 0 END
          + CASE WHEN contactado_2 THEN 1 ELSE 0 END
          + CASE WHEN contactado_3 THEN 1 ELSE 0 END) AS enviados
-      FROM leads_nitel WHERE archivado = false
+      FROM nitel_leads WHERE archivado = false
     )
     SELECT
       (SELECT COUNT(*)::int FROM base WHERE total_correos > 0 AND enviados = 0) AS pendientes,
       (SELECT COUNT(*)::int FROM base WHERE total_correos > 0 AND enviados > 0 AND enviados < total_correos) AS activas,
       (SELECT COUNT(*)::int FROM (
-        SELECT 1 FROM leads_nitel WHERE contactado_1 AND hora_enviado_1::date = CURRENT_DATE
-        UNION ALL SELECT 1 FROM leads_nitel WHERE contactado_2 AND hora_enviado_2::date = CURRENT_DATE
-        UNION ALL SELECT 1 FROM leads_nitel WHERE contactado_3 AND hora_enviado_3::date = CURRENT_DATE
+        SELECT 1 FROM nitel_leads WHERE contactado_1 AND hora_enviado_1::date = CURRENT_DATE
+        UNION ALL SELECT 1 FROM nitel_leads WHERE contactado_2 AND hora_enviado_2::date = CURRENT_DATE
+        UNION ALL SELECT 1 FROM nitel_leads WHERE contactado_3 AND hora_enviado_3::date = CURRENT_DATE
       ) AS h) AS enviados_hoy,
       (SELECT
          SUM(CASE WHEN contactado_1 THEN 1 ELSE 0 END
            + CASE WHEN contactado_2 THEN 1 ELSE 0 END
            + CASE WHEN contactado_3 THEN 1 ELSE 0 END)::int
-       FROM leads_nitel) AS total_enviados
+       FROM nitel_leads) AS total_enviados
   `);
   const row = r.rows[0] as Record<string, number>;
   return {

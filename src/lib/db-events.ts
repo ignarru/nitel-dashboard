@@ -3,13 +3,13 @@
  * y emite eventos internos para que los endpoints SSE los multiplexeen a clientes.
  *
  * Canales escuchados:
- *   - leads_nitel_change   → INSERT/UPDATE en leads_nitel
+ *   - nitel_leads_change   → INSERT/UPDATE en nitel_leads
  *   - busquedas_logs_change → INSERT/UPDATE en busquedas_logs
  */
 import { EventEmitter } from "events";
 import { Client } from "pg";
 
-const CHANNELS = ["leads_nitel_change", "busquedas_logs_change"] as const;
+const CHANNELS = ["nitel_leads_change", "busquedas_logs_change"] as const;
 
 export type LeadsChangeEvent = {
   op: "INSERT" | "UPDATE" | "DELETE";
@@ -42,7 +42,7 @@ class DbEventsListener extends EventEmitter {
         if (!msg.payload) return;
         try {
           const data = JSON.parse(msg.payload);
-          if (msg.channel === "leads_nitel_change") {
+          if (msg.channel === "nitel_leads_change") {
             this.emit("leads:change", data as LeadsChangeEvent);
           } else if (msg.channel === "busquedas_logs_change") {
             this.emit("busquedas:change", data as BusquedasChangeEvent);

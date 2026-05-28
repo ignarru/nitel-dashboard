@@ -12,9 +12,9 @@ const LIMITE_DIARIO = 2000;
 async function getEnviadosHoy(): Promise<number> {
   const r = await db.execute(sql`
     SELECT COUNT(*)::int AS n FROM (
-      SELECT 1 FROM leads_nitel WHERE contactado_1 AND hora_enviado_1::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
-      UNION ALL SELECT 1 FROM leads_nitel WHERE contactado_2 AND hora_enviado_2::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
-      UNION ALL SELECT 1 FROM leads_nitel WHERE contactado_3 AND hora_enviado_3::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
+      SELECT 1 FROM nitel_leads WHERE contactado_1 AND hora_enviado_1::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
+      UNION ALL SELECT 1 FROM nitel_leads WHERE contactado_2 AND hora_enviado_2::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
+      UNION ALL SELECT 1 FROM nitel_leads WHERE contactado_3 AND hora_enviado_3::date = (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
     ) AS h
   `);
   return (r.rows[0] as { n: number }).n ?? 0;

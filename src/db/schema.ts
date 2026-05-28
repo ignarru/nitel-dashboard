@@ -25,7 +25,7 @@ import {
  *      - UPDATE contactado_N = true, hora_enviado_N = NOW()
  */
 export const leadsNitel = pgTable(
-  "leads_nitel",
+  "nitel_leads",
   {
     placeId: varchar("place_id", { length: 255 }).primaryKey(),
     name: varchar("name", { length: 500 }),
@@ -64,10 +64,10 @@ export const leadsNitel = pgTable(
     notas: text("notas"),
   },
   (t) => [
-    index("idx_leads_nitel_contactado_1").on(t.contactado1),
-    index("idx_leads_nitel_email").on(t.email),
-    index("idx_leads_nitel_respondio").on(t.respondio),
-    index("idx_leads_nitel_source_node").on(t.sourceNode),
+    index("idx_nitel_leads_contactado_1").on(t.contactado1),
+    index("idx_nitel_leads_email").on(t.email),
+    index("idx_nitel_leads_respondio").on(t.respondio),
+    index("idx_nitel_leads_source_node").on(t.sourceNode),
   ],
 );
 
