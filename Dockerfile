@@ -6,6 +6,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+# DATABASE_URL dummy SOLO para el build: src/db/client.ts hace throw si la
+# variable no existe al importarse, y en el build no hay base disponible.
+# NO se conecta a esta URL durante el build (las páginas son force-dynamic;
+# no se ejecuta ninguna query). En runtime el valor REAL llega por env_file.
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
 RUN npm run build
 
 # ---- Runtime ----
