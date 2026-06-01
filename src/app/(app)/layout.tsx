@@ -1,4 +1,6 @@
 import { sql } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { db } from "@/db/client";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { LeadsStreamProvider } from "@/components/leads-stream-provider";
@@ -21,6 +23,13 @@ async function getEnviadosHoy(): Promise<number> {
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // Protección: solo entra el email autorizado (login con Google).
+  // En desarrollo se saltea para poder probar local sin loguearse.
+  if (process.env.NODE_ENV !== "development") {
+    const session = await auth();
+    if (!session) redirect("/login");
+  }
+
   const enviadosHoy = await getEnviadosHoy();
 
   return (
