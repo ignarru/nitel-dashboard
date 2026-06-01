@@ -1,0 +1,34 @@
+# No mandar al build de Docker cosas pesadas o sensibles.
+
+# dependencias (se reinstalan dentro de la imagen con npm ci)
+node_modules
+.pnp
+.pnp.*
+
+# build de Next (se regenera dentro de la imagen)
+.next
+out
+build
+
+# credenciales y secretos: NUNCA dentro de la imagen.
+secrets
+.env
+.env.*
+*.pem
+
+# git y metadata
+.git
+.gitignore
+
+# typescript / logs / misc
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+
+# docs que no hacen falta en la imagen
+DEPLOY-NITEL.md
+README.md
+AGENTS.md
+CLAUDE.md
