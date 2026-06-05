@@ -8,6 +8,9 @@ services:
     env_file:
       - .env.local
     volumes:
-      - ./secrets:/app/secrets:ro
+      # Escribible (NO :ro): el login de Gmail (/api/auth/google/init) guarda
+      # acá secrets/oauth-token.json. Al ser un bind-mount a una carpeta del
+      # host, el token sobrevive rebuilds y reinicios del contenedor.
+      - ./secrets:/app/secrets
     extra_hosts:
       - "host.docker.internal:host-gateway"

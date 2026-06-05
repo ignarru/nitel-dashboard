@@ -153,9 +153,17 @@ export async function enviarAhora(
       ? htmlGuardado
       : cuerpoTextoAHtml(cuerpoTexto);
 
-  // Modo prueba: TEST_EMAIL_OVERRIDE redirige a una casilla controlada.
-  // La DB se actualiza igual con el lead original.
-  const destinatarioReal = process.env.TEST_EMAIL_OVERRIDE?.trim() || lead.email;
+  // Modo prueba: TEST_EMAIL_OVERRIDE redirige a casilla(s) controlada(s).
+  // Admite varios emails separados por coma (ej. "a@x.com, b@y.com"): el
+  // correo se manda a TODOS ellos en vez de al lead. La DB se actualiza
+  // igual con el lead original. Si está vacío, va al email real del lead.
+  const overrideRaw = process.env.TEST_EMAIL_OVERRIDE?.trim();
+  const destinatarioReal: string | string[] = overrideRaw
+    ? overrideRaw
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0)
+    : lead.email;
 
   // Claim atómico anti doble-envío: marcamos contactado_N = true en un UPDATE
   // condicional ANTES de mandar. Si dos requests corren a la vez (doble click,

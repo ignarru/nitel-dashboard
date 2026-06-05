@@ -96,7 +96,7 @@ function encodeRFC2047(s: string): string {
 }
 
 export async function sendEmail(params: {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   fromEmail?: string;
@@ -111,9 +111,12 @@ export async function sendEmail(params: {
   const fromName = params.fromName ?? process.env.FROM_NAME ?? "Nitel";
   const fromHeader = fromName ? `${encodeRFC2047(fromName)} <${fromEmail}>` : fromEmail;
 
+  // El header "To" admite varios destinatarios separados por coma.
+  const toHeader = Array.isArray(params.to) ? params.to.join(", ") : params.to;
+
   const mime = [
     `From: ${fromHeader}`,
-    `To: ${params.to}`,
+    `To: ${toHeader}`,
     `Subject: ${encodeRFC2047(params.subject)}`,
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=UTF-8",
