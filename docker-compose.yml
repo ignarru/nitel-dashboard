@@ -4,7 +4,10 @@ services:
     container_name: nitel-dashboard
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      # 0.0.0.0 para que el reverse proxy (Nginx Proxy Manager, en otra red/host)
+      # pueda alcanzar el contenedor. El acceso queda igualmente protegido por el
+      # login con Google; el proxy expone el dominio por HTTPS.
+      - "0.0.0.0:3000:3000"
     env_file:
       - .env.local
     volumes:
