@@ -6,7 +6,9 @@ import { BandejaInteractiva, type LeadRow } from "@/components/bandeja-interacti
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 25;
+// 5 secuencias por página: con muchas secuencias cargando a la vez la bandeja
+// se ponía lenta. Menos por página = carga más liviana.
+const PAGE_SIZE = 5;
 
 type Stats = {
   pendientes: number;
