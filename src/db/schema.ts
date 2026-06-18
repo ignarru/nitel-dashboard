@@ -62,6 +62,9 @@ export const leadsNitel = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     archivado: boolean("archivado").notNull().default(false),
     notas: text("notas"),
+    // Dossier de la empresa que arma la IA (scraper de n8n) y sirve de contexto para
+    // redactar los correos. n8n debe escribir esta columna; el dashboard solo lo muestra.
+    dossier: text("dossier"),
   },
   (t) => [
     index("idx_nitel_leads_contactado_1").on(t.contactado1),

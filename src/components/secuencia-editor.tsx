@@ -25,6 +25,7 @@ import {
   ListOrdered,
   Link2,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { guardarBorrador, enviarAhora } from "@/lib/correo-actions";
 import { guardarNota, editarLead } from "@/lib/lead-actions";
@@ -41,6 +42,7 @@ type LeadUI = {
   website: string | null;
   address: string | null;
   notas: string | null;
+  dossier: string | null;
   respondio: boolean;
 };
 
@@ -633,6 +635,10 @@ function LeadInfoEditable({ lead }: { lead: LeadUI }) {
   const [notaGuardada, setNotaGuardada] = useState<Date | null>(null);
   const notaTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Resumen de la empresa (dossier de la IA) — colapsable
+  const [dossierAbierto, setDossierAbierto] = useState(false);
+  const tieneDossier = !!lead.dossier && lead.dossier.trim() !== "";
+
   function onNotaChange(v: string) {
     setNotas(v);
     if (notaTimer.current) clearTimeout(notaTimer.current);
@@ -727,6 +733,28 @@ function LeadInfoEditable({ lead }: { lead: LeadUI }) {
             </div>
           )}
         </>
+      )}
+
+      {/* Resumen de la empresa (dossier de la IA) */}
+      {tieneDossier && (
+        <div className="mt-4 pt-4 border-t border-[var(--nitel-border)]">
+          <button
+            onClick={() => setDossierAbierto((v) => !v)}
+            className="w-full flex items-center justify-between gap-1.5 text-[10.5px] uppercase tracking-[0.16em] text-zinc-500 hover:text-[#01dcfd] font-medium transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3" /> Resumen de la empresa
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${dossierAbierto ? "rotate-180" : ""}`}
+            />
+          </button>
+          {dossierAbierto && (
+            <div className="mt-2 text-[12.5px] text-zinc-400 leading-relaxed whitespace-pre-wrap break-words max-h-72 overflow-y-auto pr-1">
+              {lead.dossier}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Notas internas */}

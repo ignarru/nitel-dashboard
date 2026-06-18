@@ -13,6 +13,9 @@ idempotentes: correrlos dos veces no hace daño).
 | `setup-notify.sql` | Función + triggers `NOTIFY` sobre `nitel_leads` para el stream SSE en tiempo real. |
 | `setup-respuestas.sql` | Agrega a `nitel_leads` las columnas `respuesta_texto` y `respuesta_recibida_at` + índice. |
 | `setup-correo-html.sql` | Agrega a `nitel_leads` las columnas `correo_1_html`, `correo_2_html`, `correo_3_html`: guardan el HTML con formato (negritas, links, listas) que edita el operador en el dashboard. n8n nunca las toca. |
+| `setup-dossier.sql` | Agrega la columna `dossier` (resumen de la empresa que arma la IA) y recrea la vista para exponerla. Se muestra en el editor del dashboard. n8n debe poblarla. |
+
+> **Estructura real (verificada 2026-06-18):** `leads_nitel` es la **TABLA** real (la que escribe n8n) y `nitel_leads` es una **VISTA** sobre ella (la que lee el dashboard / Drizzle). Por eso `setup-dossier.sql` agrega la columna a la tabla **y** recrea la vista. Si agregás columnas nuevas para el dashboard, acordate de exponerlas también en la vista.
 
 > Las columnas `correo_N_html` son **invisibles para n8n**: su workflow escribe en
 > `correo_N` (texto plano) y jamás lee ni escribe las `_html`. Por eso agregarlas no

@@ -125,6 +125,7 @@ export default async function SecuenciaPage({ params }: { params: Promise<{ id: 
             website: lead.website,
             address: lead.address,
             notas: lead.notas,
+            dossier: lead.dossier,
             respondio: !!(lead.respondio && lead.respuestaTexto && lead.respuestaTexto.trim() !== ""),
           }}
           correos={correos}
