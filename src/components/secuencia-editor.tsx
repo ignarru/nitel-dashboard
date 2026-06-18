@@ -710,7 +710,7 @@ function LeadInfoEditable({ lead }: { lead: LeadUI }) {
           <div className="text-sm text-zinc-400 truncate">{lead.email || "(sin email)"}</div>
           {lead.category && <div className="text-xs text-zinc-500 mt-1">{lead.category}</div>}
           {(lead.phone || lead.website) && (
-            <div className="mt-3 pt-3 border-t border-[var(--nitel-border)] space-y-1 text-[11px] text-zinc-500">
+            <div className="mt-3 pt-3 border-t border-[var(--nitel-border)] space-y-1 text-sm text-zinc-500">
               {lead.phone && <div>{lead.phone}</div>}
               {lead.website && (
                 <div className="truncate">
