@@ -87,19 +87,19 @@ export function BuscarLeadsForm() {
           label="Industria o sector"
           hint="Ej: inmobiliaria, ferretería, veterinaria. Lo corregimos automático con IA si tipeás mal"
         >
-          <Input name="Industria/Sector" placeholder="inmobiliaria" />
+          <Input name="Industria/Sector" />
         </FieldGroup>
 
         <FieldGroup icon={Globe} label="País">
-          <Input name="Pais" placeholder="Argentina" />
+          <Input name="Pais" />
         </FieldGroup>
 
         <FieldGroup icon={MapPin} label="Provincia">
-          <Input name="Provincia" placeholder="Córdoba" />
+          <Input name="Provincia" />
         </FieldGroup>
 
         <FieldGroup icon={MapPin} label="Ciudad">
-          <Input name="Ciudad" placeholder="Córdoba Capital" />
+          <Input name="Ciudad" />
         </FieldGroup>
       </div>
 
