@@ -46,6 +46,10 @@ export function BuscarLeadsForm() {
     });
   }
 
+  // Si hay un KMZ cargado, la ubicación sale del polígono → bloqueamos país/provincia/ciudad.
+  // Si NO hay KMZ, el radio no aplica → lo bloqueamos.
+  const tieneKmz = !!archivoNombre;
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Archivo KMZ — destacado arriba */}
@@ -90,16 +94,31 @@ export function BuscarLeadsForm() {
           <Input name="Industria/Sector" />
         </FieldGroup>
 
-        <FieldGroup icon={Globe} label="País">
-          <Input name="Pais" />
+        <FieldGroup
+          icon={Globe}
+          label="País"
+          disabled={tieneKmz}
+          hint={tieneKmz ? "Se usa la ubicación del archivo KMZ" : undefined}
+        >
+          <Input name="Pais" disabled={tieneKmz} />
         </FieldGroup>
 
-        <FieldGroup icon={MapPin} label="Provincia">
-          <Input name="Provincia" />
+        <FieldGroup
+          icon={MapPin}
+          label="Provincia"
+          disabled={tieneKmz}
+          hint={tieneKmz ? "Se usa la ubicación del archivo KMZ" : undefined}
+        >
+          <Input name="Provincia" disabled={tieneKmz} />
         </FieldGroup>
 
-        <FieldGroup icon={MapPin} label="Ciudad">
-          <Input name="Ciudad" />
+        <FieldGroup
+          icon={MapPin}
+          label="Ciudad"
+          disabled={tieneKmz}
+          hint={tieneKmz ? "Se usa la ubicación del archivo KMZ" : undefined}
+        >
+          <Input name="Ciudad" disabled={tieneKmz} />
         </FieldGroup>
       </div>
 
@@ -111,17 +130,30 @@ export function BuscarLeadsForm() {
             type="number"
             min={1}
             max={500}
-            defaultValue={50}
             required
           />
         </FieldGroup>
 
-        <FieldGroup icon={Compass} label="Radio (km)" hint="Solo aplica con KMZ. Default 3 km">
-          <Input name="Radio en km (solo aplica con KMZ)" type="number" min={1} defaultValue={3} />
+        <FieldGroup
+          icon={Compass}
+          label="Radio (km)"
+          disabled={!tieneKmz}
+          hint={tieneKmz ? "Radio alrededor del polígono del KMZ. Default 3 km" : "Solo aplica si subís un KMZ"}
+        >
+          <Input
+            name="Radio en km (solo aplica con KMZ)"
+            type="number"
+            min={1}
+            defaultValue={3}
+            disabled={!tieneKmz}
+          />
         </FieldGroup>
 
         <FieldGroup icon={Star} label="Rating mínimo" required>
-          <Select name="Rating mínimo (estrellas)" required defaultValue="+4.0">
+          <Select name="Rating mínimo (estrellas)" required defaultValue="">
+            <option value="" disabled>
+              Elegí un rating
+            </option>
             {RATINGS.map((r) => (
               <option key={r} value={r}>
                 {r === "5" ? "5 estrellas" : `${r} y más`}
@@ -158,16 +190,18 @@ function FieldGroup({
   label,
   hint,
   required,
+  disabled,
   children,
 }: {
   icon: React.ElementType;
   label: string;
   hint?: string;
   required?: boolean;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className={disabled ? "opacity-50 transition-opacity" : "transition-opacity"}>
       <div className="flex items-center gap-1.5 mb-1.5">
         <Icon className="w-3.5 h-3.5 text-[#01dcfd]/70" />
         <label className="text-[10.5px] uppercase tracking-[0.16em] text-zinc-500 font-medium">
@@ -189,7 +223,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full px-3 py-2 rounded-lg bg-[#14141f]/60 border border-[var(--nitel-border)] text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#01dcfd]/50 focus:bg-[#14141f]/90 transition-all"
+      className="w-full px-3 py-2 rounded-lg bg-[#14141f]/60 border border-[var(--nitel-border)] text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#01dcfd]/50 focus:bg-[#14141f]/90 transition-all disabled:cursor-not-allowed disabled:bg-[#14141f]/30"
     />
   );
 }
