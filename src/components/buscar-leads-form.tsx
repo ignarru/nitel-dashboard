@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, Upload, Loader2, MapPin, Tag, Globe, Star, Hash, Compass } from "lucide-react";
+import { Search, Upload, Loader2, MapPin, Tag, Globe, Star, Hash, Compass, X } from "lucide-react";
 import { buscarLeads } from "@/lib/buscar-leads-action";
 import { useLeadsStream } from "./leads-stream-provider";
 
@@ -14,10 +14,17 @@ export function BuscarLeadsForm() {
   const { trackBusqueda } = useLeadsStream();
   const [pending, start] = useTransition();
   const [archivoNombre, setArchivoNombre] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     setArchivoNombre(file ? file.name : null);
+  }
+
+  function limpiarArchivo() {
+    setArchivoNombre(null);
+    // El <input type="file"> guarda el archivo internamente: hay que vaciarlo a mano.
+    if (inputRef.current) inputRef.current.value = "";
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -64,11 +71,27 @@ export function BuscarLeadsForm() {
             {archivoNombre || "Click para subir un .kmz o .kml"}
           </span>
           {archivoNombre && (
-            <span className="text-[10.5px] uppercase tracking-wider text-[#01dcfd]">
-              cargado
-            </span>
+            <>
+              <span className="text-[10.5px] uppercase tracking-wider text-[#01dcfd]">
+                cargado
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  limpiarArchivo();
+                }}
+                className="relative z-10 shrink-0 p-1 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                aria-label="Eliminar archivo"
+                title="Eliminar archivo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </>
           )}
           <input
+            ref={inputRef}
             type="file"
             name="Archivo KMZ/KML (opcional)"
             accept=".kmz,.kml"
